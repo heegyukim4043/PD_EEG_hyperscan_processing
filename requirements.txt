@@ -1,0 +1,6 @@
+numpy>=1.24
+scipy>=1.10
+matplotlib>=3.7
+mne>=1.5
+mne-icalabel>=0.4
+hypyp>=0.3
