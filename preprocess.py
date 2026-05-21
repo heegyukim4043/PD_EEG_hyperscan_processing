@@ -53,8 +53,8 @@ warnings.filterwarnings('ignore', category=UserWarning)
 
 # ── Default paths ──────────────────────────────────────────────────────────────
 BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
-_DATA_DIR   = os.path.join(BASE_DIR, '..', 'data')
-_OUTPUT_DIR = os.path.join(BASE_DIR, '..', 'results')
+_DATA_DIR   = os.path.abspath(os.path.join(BASE_DIR, '..'))
+_OUTPUT_DIR = os.path.abspath(os.path.join(BASE_DIR, '..', 'results'))
 
 # ── Recording parameters ───────────────────────────────────────────────────────
 SRATE     = 300
@@ -83,13 +83,15 @@ REST_N_RUNS = 3
 # Data loading
 # ══════════════════════════════════════════════════════════════════════════════
 def _get_field(data, field):
+    if hasattr(data, field):
+        return getattr(data, field)
     val = data[field]
     return val.item() if hasattr(val, 'item') else val
 
 
 def load_group(g, data_dir):
     mat = sio.loadmat(os.path.join(data_dir, f'G{g:02d}_eeg.mat'),
-                      squeeze_me=True)
+                      struct_as_record=False, squeeze_me=True)
     d = mat['data']
     return {
         'decision_X': _get_field(d, 'decision_X'),

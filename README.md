@@ -1,271 +1,237 @@
-# Hyperscanning EEG — Prisoner's Dilemma
+# PD EEG Hyperscanning Processing
 
-Analysis code for the three-person hyperscanning EEG dataset accompanying the paper:
+Python analysis pipeline for the three-person hyperscanning EEG prisoner's dilemma dataset.
 
-> **"[Paper title]"**  
-> [Authors] · [Journal] · [Year]
+This folder is adapted from:
 
----
+https://github.com/heegyukim4043/PD_EEG_hyperscan_processing
 
-## Overview
+The analysis logic is kept the same as the source repository. The local changes are:
 
-Eleven groups of three participants simultaneously played a repeated prisoner's dilemma game (40 trials) while EEG was recorded with DSI-24 (19 channels per participant, 57 channels total per group).  
-This repository provides the full analysis pipeline:
+- input `.mat` files are read from the parent project folder by default
+- outputs are written to `results/` by default
+- `run_all.py` was added to run preprocessing, IBS, and ERP steps in order
+- MAT struct loading was adjusted for the current `GXX_eeg.mat` files
 
-1. **Preprocessing** — ICA-based artifact removal (task) + bandpass filtering (resting)
-2. **IBS analysis** — Inter-Brain Synchrony (PLV, Coherence) with cluster-permutation statistics
-3. **ERP analysis** — Grand-average ERP, Coop vs. Defect comparison, difference waves
+## Expected Data
 
----
+Place the group-level MATLAB files in the project root, next to this `pd_eeg_analysis/` folder:
 
-## Dataset
-
-The raw `.mat` files are available at: **[Dataset DOI / Repository URL]**
-
-Place the downloaded files in a `data/` folder:
-
-```
-data/
+```text
+project_root/
   G01_eeg.mat
   G02_eeg.mat
   ...
   G11_eeg.mat
+  pd_eeg_analysis/
+    preprocess.py
+    ibs_analysis.py
+    erp_analysis.py
+    run_all.py
 ```
 
-### Data structure
-
-Each `GXX_eeg.mat` file contains a MATLAB struct `data` with the following fields:
+Each `GXX_eeg.mat` file must contain a MATLAB struct named `data`:
 
 | Field | Shape | Description |
-|---|---|---|
-| `decision_X` | (57, 1500, 40) | Decision-phase EEG, epoch [−1000, 4000] ms, 300 Hz |
-| `feedback_X` | (57, 900, 40) | Feedback-phase EEG, epoch [−1000, 2000] ms, 300 Hz |
-| `resting` | (57, 18000, 3) | Resting-state EEG, 3 runs × 60 s, 300 Hz |
-| `score` | (40, 3) | Behavioral scores per trial per subject (1 = cooperate, 2 = defect) |
+|---|---:|---|
+| `decision_X` | `(57, 1500, 40)` | Decision-phase EEG, epoch `[-1000, 4000]` ms, 300 Hz |
+| `feedback_X` | `(57, 900, 40)` | Feedback-phase EEG, epoch `[-1000, 2000]` ms, 300 Hz |
+| `resting` | `(57, 18000, 3)` | Resting-state EEG, 3 runs x 60 s, 300 Hz |
+| `score` | `(40, 3)` | Trial behavior per subject, `1 = cooperate`, `2 = defect` |
 
-- **57 channels = 19 ch × 3 subjects** (S1, S2, S3)
-- Channel naming convention: `{electrode}` ordered as `P3, C3, F3, Fz, F4, C4, P4, Cz, Pz, Fp1, Fp2, T3, T5, O1, O2, F7, F8, T6, T4`; repeated for S1, S2, S3
-- **Original recording filter** (applied prior to saving): high-pass 1 Hz · notch 60 Hz · reference: both earlobes · 300 Hz
+Channel order per subject:
 
-### Experimental design
+```text
+P3, C3, F3, Fz, F4, C4, P4, Cz, Pz, Fp1, Fp2, T3, T5, O1, O2, F7, F8, T6, T4
+```
 
-| Item | Detail |
-|---|---|
-| Groups (hyperscanning triads) | 11 (G01–G11) |
-| Subjects per group | 3 |
-| EEG channels per subject | 19 (DSI-24, 10–20 system) |
-| Task | Repeated prisoner's dilemma |
-| Trials | 40 per session |
-| Decision epoch | [−1000, 4000] ms (onset at 0 ms) |
-| Feedback epoch | [−1000, 2000] ms (onset at 0 ms) |
-| Resting state | 3 runs × 60 s (eyes open) |
-| Sampling rate | 300 Hz |
-| Reference | Both earlobes |
+The 57 channels are stored as `19 channels x 3 subjects`:
 
----
+- S1: channels 1-19
+- S2: channels 20-38
+- S3: channels 39-57
 
 ## Installation
 
-```bash
-pip install -r requirements.txt
+Create or activate a Python environment, then install dependencies:
+
+```powershell
+.\.venv\Scripts\python -m pip install -r pd_eeg_analysis\requirements.txt
 ```
 
-**Key dependencies:**
+Requirements:
 
-| Package | Purpose |
-|---|---|
-| `mne` | EEG processing, ICA, filtering |
-| `mne-icalabel` | Automatic ICA component classification |
-| `hypyp` | Inter-brain synchrony (PLV, Coherence, cluster-permutation) |
-| `scipy` | Signal processing, statistics |
-| `matplotlib` | Figures |
+- Python 3.9 or newer
+- `mne`
+- `mne-icalabel`
+- `hypyp`
+- `numpy`
+- `scipy`
+- `matplotlib`
 
-Python ≥ 3.9 recommended.
+## Run All Steps
 
----
+From the project root:
 
-## Usage
-
-Run the three scripts in order:
-
-```bash
-# Step 1 — Preprocessing (saves cleaned_eeg.pkl, ~20–40 min)
-python preprocess.py --data_dir data/ --output_dir results/
-
-# Step 2 — IBS analysis (saves figures + CSV, ~30–60 min for permutation tests)
-python ibs_analysis.py --cache results/cleaned_eeg.pkl --output_dir results/
-
-# Step 3 — ERP analysis (saves figures + CSV, ~2 min)
-python erp_analysis.py --cache results/cleaned_eeg.pkl --output_dir results/
+```powershell
+.\.venv\Scripts\python pd_eeg_analysis\run_all.py
 ```
 
-All scripts cache intermediate results. Re-running is safe and fast after the first run.
+This runs:
 
----
+1. `preprocess.py`
+2. `ibs_analysis.py`
+3. `erp_analysis.py`
 
-## Analysis pipeline
+Outputs are written to:
 
-### 1. Preprocessing (`preprocess.py`)
-
-**Task EEG (decision & feedback)**
-
-| Step | Detail |
-|---|---|
-| Re-reference | Average reference |
-| Bandpass | 1–100 Hz (FIR) |
-| ICA | Infomax extended, n_components = min(15, n_ch − 1) = 15, seed = 42 |
-| Artifact rejection | ICLabel: eye blink + muscle artifact (p > 0.80) |
-
-**Resting-state EEG**
-
-| Step | Detail |
-|---|---|
-| Re-reference | Average reference |
-| Bandpass | 1–45 Hz (FIR) |
-| ICA | Not applied |
-
-**Output:** `results/cleaned_eeg.pkl`
-
-```
-cache[g]                          # g = 1 … 11
-  ['decision'] : (57, 1500, 40)   # µV, ICA-cleaned
-  ['feedback'] : (57,  900, 40)   # µV, ICA-cleaned
-  ['resting']  : list of 3 runs, each (57, 18000)   # µV, filtered
-  ['score']    : (40, 3)          # 1 = cooperate, 2 = defect
+```text
+results/
 ```
 
----
+## Run Individual Steps
 
-### 2. IBS analysis (`ibs_analysis.py`)
+Preprocessing:
 
-**Frequency bands**
+```powershell
+.\.venv\Scripts\python pd_eeg_analysis\preprocess.py --data_dir . --output_dir results
+```
+
+IBS analysis:
+
+```powershell
+.\.venv\Scripts\python pd_eeg_analysis\ibs_analysis.py --cache results\cleaned_eeg.pkl --output_dir results
+```
+
+ERP analysis:
+
+```powershell
+.\.venv\Scripts\python pd_eeg_analysis\erp_analysis.py --cache results\cleaned_eeg.pkl --output_dir results
+```
+
+To skip expensive steps:
+
+```powershell
+.\.venv\Scripts\python pd_eeg_analysis\run_all.py --skip-preprocess
+.\.venv\Scripts\python pd_eeg_analysis\run_all.py --skip-ibs
+.\.venv\Scripts\python pd_eeg_analysis\run_all.py --skip-erp
+```
+
+## Pipeline
+
+### 1. Preprocessing
+
+Task EEG:
+
+- average reference
+- 1-100 Hz FIR bandpass
+- ICA with extended Infomax
+- ICLabel rejection for eye blink and muscle artifact components with probability `> 0.80`
+
+Resting EEG:
+
+- average reference
+- 1-45 Hz FIR bandpass
+- no ICA
+
+Main output:
+
+```text
+results/cleaned_eeg.pkl
+```
+
+Cache structure:
+
+```python
+cache[g]["decision"]  # ndarray, shape (57, 1500, 40)
+cache[g]["feedback"]  # ndarray, shape (57, 900, 40)
+cache[g]["resting"]   # list of 3 arrays, each shape (57, 18000)
+cache[g]["score"]     # ndarray, shape (40, 3)
+```
+
+### 2. IBS Analysis
+
+Metrics:
+
+- PLV
+- coherence using HyPyP `ccorr`
+
+Frequency bands:
 
 | Band | Range |
-|---|---|
-| Delta | 1–3 Hz |
-| Theta | 4–7 Hz |
-| Alpha | 8–12 Hz |
-| Beta | 14–25 Hz |
-| Gamma | 30–45 Hz |
+|---|---:|
+| Delta | 1-3 Hz |
+| Theta | 4-7 Hz |
+| Alpha | 8-12 Hz |
+| Beta | 14-25 Hz |
+| Gamma | 30-45 Hz |
 
-**Task IBS**
-- Bandpass (Butterworth order 4) → Hilbert transform → PLV / Coherence (ccorr)
-- Windows: 0–1000 ms and 0–2000 ms post-stimulus onset
-- Subject pairs: S1–S2, S1–S3, S2–S3 (3 dyads per group)
-- Condition: **Cooperative** (both subjects chose cooperate on that trial) vs. **Other**
-- Feature vector per trial: 95 values = 5 bands × 19 channels (channel-wise IBS on matching pairs)
+Task windows:
 
-**Resting IBS**
-- Non-overlapping windows, length matched to each task window (1000 ms or 2000 ms)
+- 0-1000 ms
+- 0-2000 ms
 
-**Statistics**
-- Cluster-permutation test (HyPyP `statscondCluster`)
-- 2000 permutations, two-tailed (tail = 0), α = 0.05
+Dyads:
 
-**Outputs**
+- S1-S2
+- S1-S3
+- S2-S3
 
-| File | Description |
-|---|---|
-| `ibs_data.pkl` | IBS arrays per task / window / metric / condition |
-| `cluster_stats.pkl` | min_p, n_sig, F-statistic map per test |
-| `stats_ibs_by_band.csv` | Per-band mean ± SEM, Cohen's d, cluster p |
-| `fig_ibs_plv.png` | PLV bar figure (Coop vs. Other) |
-| `fig_ibs_coh.png` | Coherence bar figure (Coop vs. Other) |
-| `fig_fstat_*.png` | F-statistic heatmaps (band × channel) |
+Condition split:
 
-**`ibs_data.pkl` structure**
+- cooperative: both subjects chose cooperate on the trial
+- other: all remaining trials
 
-```
-results['decision'][(0, 1000)]['plv']['coop']  : ndarray (n_coop_trials, 95)
-results['decision'][(0, 1000)]['plv']['other'] : ndarray (n_other_trials, 95)
-# keys: task ∈ {decision, feedback}
-#       window ∈ {(0,1000), (0,2000)}
-#       metric ∈ {plv, coh}
-#       cond ∈ {coop, other}
+Statistics:
 
-results['resting'][1000]['plv']['all'] : ndarray (5940, 95)
-results['resting'][2000]['plv']['all'] : ndarray (2970, 95)
-# 1000 ms: 11 groups × 3 dyads × 3 runs × 60 windows = 5940
-# 2000 ms: 11 groups × 3 dyads × 3 runs × 30 windows = 2970
+- HyPyP cluster-permutation test
+- 2000 permutations
+- two-tailed
+- alpha = 0.05
+
+Main outputs:
+
+```text
+results/ibs_data.pkl
+results/cluster_stats.pkl
+results/stats_ibs_by_band.csv
+results/fig_ibs_plv.png
+results/fig_ibs_coh.png
 ```
 
----
+## 3. ERP Analysis
 
-### 3. ERP analysis (`erp_analysis.py`)
+ERP steps:
 
-**Pipeline**
-- Trial average per subject → low-pass 15 Hz (Butterworth, order 4) → baseline correction [−200, 0] ms
-- Display window: −500 to 750 ms
-- Channels of interest: Fz (idx 3), Cz (idx 7), Pz (idx 8)
-- Minimum trials per condition for subject inclusion: 3
+- average trials per subject
+- 15 Hz low-pass Butterworth filter
+- baseline correction using `[-200, 0]` ms
+- plot window `[-500, 750]` ms
 
-**Panels**
+Channels of interest:
 
-| Panel | Description |
-|---|---|
-| (A) Grand average | All trials, per channel |
-| (B) Coop vs. Defect | Condition comparison, exploratory |
-| (C) Difference wave | Coop − Defect ± SEM |
-| (D) Group-level amplitude | Mean amplitude [250–500 ms] at Pz per group |
+- Fz
+- Cz
+- Pz
 
-**ERP components annotated**
+Main outputs:
 
-| Task | Components |
-|---|---|
-| Decision | N2 (~200 ms), P3 (~350 ms) |
-| Feedback | FRN (~250 ms), P300 (~380 ms) |
-
-**Outputs**
-
-| File | Description |
-|---|---|
-| `fig_erp_decision.png` | Panels A + B, decision task |
-| `fig_erp_feedback.png` | Panels A + B, feedback task |
-| `fig_erp_diff.png` | Panel C — difference waves |
-| `fig_erp_group.png` | Panel D — group-level amplitude |
-| `erp_amplitude_summary.csv` | Mean amplitude per task / channel / window |
-
----
-
-## Output directory structure
-
-```
-results/
-  cleaned_eeg.pkl              preprocessed EEG cache
-  ibs_data.pkl                 IBS arrays
-  cluster_stats.pkl            cluster-permutation results
-  stats_ibs_by_band.csv        IBS summary table
-  erp_amplitude_summary.csv    ERP amplitude table
-  fig_ibs_plv.png
-  fig_ibs_coh.png
-  fig_fstat_decision_plv.png
-  fig_fstat_decision_coh.png
-  fig_fstat_feedback_plv.png
-  fig_fstat_feedback_coh.png
-  fig_erp_decision.png
-  fig_erp_feedback.png
-  fig_erp_diff.png
-  fig_erp_group.png
+```text
+results/fig_erp_decision.png
+results/fig_erp_feedback.png
+results/fig_erp_diff.png
+results/fig_erp_group.png
+results/erp_amplitude_summary.csv
 ```
 
----
+## Runtime Notes
 
-## Citation
+`preprocess.py` can take a long time because it runs ICA for each subject and task.
 
-If you use this code or dataset, please cite:
+`ibs_analysis.py` can also take a long time because it computes synchrony features and runs 2000-permutation cluster tests.
 
-```bibtex
-@article{,
-  title   = {},
-  author  = {},
-  journal = {},
-  year    = {},
-  doi     = {}
-}
+For quick checking after preprocessing, ERP can be run independently:
+
+```powershell
+.\.venv\Scripts\python pd_eeg_analysis\run_all.py --skip-preprocess --skip-ibs
 ```
-
----
-
-## License
-
-[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)

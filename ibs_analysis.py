@@ -58,8 +58,8 @@ warnings.filterwarnings('ignore', category=UserWarning)
 
 # ── Default paths ──────────────────────────────────────────────────────────────
 BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
-_CACHE      = os.path.join(BASE_DIR, '..', 'results', 'cleaned_eeg.pkl')
-_OUTPUT_DIR = os.path.join(BASE_DIR, '..', 'results')
+_CACHE      = os.path.abspath(os.path.join(BASE_DIR, '..', 'results', 'cleaned_eeg.pkl'))
+_OUTPUT_DIR = os.path.abspath(os.path.join(BASE_DIR, '..', 'results'))
 
 # ── Recording parameters ───────────────────────────────────────────────────────
 SRATE     = 300
