@@ -1,4 +1,4 @@
-"""Run the original PD hyperscanning EEG pipeline on this folder's MAT files."""
+"""Run the PD hyperscanning EEG pipeline from the EEG-BIDS dataset."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 PIPELINE = Path(__file__).resolve().parent
+BIDS_DIR = ROOT / "eeg_bids"
 RESULTS = ROOT / "results"
 
 
@@ -19,11 +20,11 @@ def run_step(args: list[str]) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run preprocessing, IBS, and ERP analyses.")
+    parser = argparse.ArgumentParser(description="Run preprocessing, IBS, and ERP analyses from EEG-BIDS.")
     parser.add_argument("--skip-preprocess", action="store_true", help="Use existing results/cleaned_eeg.pkl.")
     parser.add_argument("--skip-ibs", action="store_true", help="Do not run IBS analysis.")
     parser.add_argument("--skip-erp", action="store_true", help="Do not run ERP analysis.")
-    parser.add_argument("--data-dir", default=str(ROOT), help="Folder containing G01_eeg.mat ... G11_eeg.mat.")
+    parser.add_argument("--bids-dir", default=str(BIDS_DIR), help="Folder containing the EEG-BIDS dataset.")
     parser.add_argument("--output-dir", default=str(RESULTS), help="Folder for all output files.")
     args = parser.parse_args()
 
@@ -34,9 +35,9 @@ def main() -> None:
         run_step(
             [
                 sys.executable,
-                str(PIPELINE / "preprocess.py"),
-                "--data_dir",
-                args.data_dir,
+                str(PIPELINE / "preprocess_bids.py"),
+                "--bids_dir",
+                args.bids_dir,
                 "--output_dir",
                 args.output_dir,
             ]
