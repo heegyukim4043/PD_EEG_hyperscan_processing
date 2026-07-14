@@ -14,7 +14,7 @@ The code does not require MATLAB `.mat` files. It reads:
 |---|---|
 | `preprocess_bids.py` | Reads BIDS EEG files and creates the cleaned analysis cache |
 | `preprocessing_core.py` | Shared MNE preprocessing functions |
-| `ibs_analysis.py` | IBS analysis: PLV, coherence, cluster statistics |
+| `ibs_analysis.py` | IBS analysis: PLV, ccorr, cluster statistics |
 | `erp_analysis.py` | ERP analysis and figures |
 | `run_all.py` | Runs all steps in order |
 
